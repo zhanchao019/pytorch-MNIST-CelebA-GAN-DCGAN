@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.autograd import Variable
-
+from tqdm import tqdm
 # G(z)
 class generator(nn.Module):
     # initializers
@@ -116,7 +116,7 @@ train_epoch = 100
 # data_loader
 transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        transforms.Normalize([0.5], [0.5])
 ])
 train_loader = torch.utils.data.DataLoader(
     datasets.MNIST('data', train=True, download=True, transform=transform),
@@ -149,7 +149,7 @@ train_hist['G_losses'] = []
 for epoch in range(train_epoch):
     D_losses = []
     G_losses = []
-    for x_, _ in train_loader:
+    for x_, _ in tqdm(train_loader):
         # train discriminator D
         D.zero_grad()
 
@@ -162,6 +162,8 @@ for epoch in range(train_epoch):
 
         x_, y_real_, y_fake_ = Variable(x_.cuda()), Variable(y_real_.cuda()), Variable(y_fake_.cuda())
         D_result = D(x_)
+        D_result=D_result.flatten()
+
         D_real_loss = BCE_loss(D_result, y_real_)
         D_real_score = D_result
 
@@ -170,6 +172,7 @@ for epoch in range(train_epoch):
         G_result = G(z_)
 
         D_result = D(G_result)
+        D_result=D_result.flatten()
         D_fake_loss = BCE_loss(D_result, y_fake_)
         D_fake_score = D_result
 
@@ -178,7 +181,7 @@ for epoch in range(train_epoch):
         D_train_loss.backward()
         D_optimizer.step()
 
-        D_losses.append(D_train_loss.data[0])
+        D_losses.append(D_train_loss.item())
 
         # train generator G
         G.zero_grad()
@@ -189,11 +192,12 @@ for epoch in range(train_epoch):
         z_, y_ = Variable(z_.cuda()), Variable(y_.cuda())
         G_result = G(z_)
         D_result = D(G_result)
+        D_result=D_result.flatten()
         G_train_loss = BCE_loss(D_result, y_)
         G_train_loss.backward()
         G_optimizer.step()
 
-        G_losses.append(G_train_loss.data[0])
+        G_losses.append(G_train_loss.item())
 
     print('[%d/%d]: loss_d: %.3f, loss_g: %.3f' % (
         (epoch + 1), train_epoch, torch.mean(torch.FloatTensor(D_losses)), torch.mean(torch.FloatTensor(G_losses))))

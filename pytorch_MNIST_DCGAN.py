@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.autograd import Variable
-
+from tqdm import tqdm
 # G(z)
 class generator(nn.Module):
     # initializers
@@ -142,7 +142,7 @@ img_size = 64
 transform = transforms.Compose([
         transforms.Scale(img_size),
         transforms.ToTensor(),
-        transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        transforms.Normalize([0.5], [0.5])
 ])
 train_loader = torch.utils.data.DataLoader(
     datasets.MNIST('data', train=True, download=True, transform=transform),
@@ -184,7 +184,7 @@ for epoch in range(train_epoch):
     D_losses = []
     G_losses = []
     epoch_start_time = time.time()
-    for x_, _ in train_loader:
+    for x_, _ in tqdm(train_loader):
         # train discriminator D
         D.zero_grad()
 
@@ -211,7 +211,7 @@ for epoch in range(train_epoch):
         D_optimizer.step()
 
         # D_losses.append(D_train_loss.data[0])
-        D_losses.append(D_train_loss.data[0])
+        D_losses.append(D_train_loss.item())
 
         # train generator G
         G.zero_grad()
@@ -225,7 +225,7 @@ for epoch in range(train_epoch):
         G_train_loss.backward()
         G_optimizer.step()
 
-        G_losses.append(G_train_loss.data[0])
+        G_losses.append(G_train_loss.item())
 
         num_iter += 1
 
